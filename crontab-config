@@ -1,0 +1,4 @@
+# To run the configuration everyday at 1 AM.
+0 1 * * * /usr/bin/ansible-playbook /path/to/ansible_service/site.yml >> /var/log/ansible.log 2>&1
+# To run log rotate script every sunday at 2 AM.
+0 2 * * 0 /bin/bash /path/to/ansible_service/logrotate.sh >> /var/log/logrotate.log

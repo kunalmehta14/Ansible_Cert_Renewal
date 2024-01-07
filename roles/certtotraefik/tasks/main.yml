@@ -1,0 +1,31 @@
+- name: Stop_Docker_Container
+  shell:
+    cmd: docker stop traefik_service
+
+- name: Find_old_certificate_files
+  find:
+    paths: "{{ certpath }}"
+    file_type: any
+  register: collected_files
+
+- name: Remove_old_certificate_files
+  file:
+    path: "{{ item.path }}"
+    state: absent
+  with_items: "{{ collected_files.files }}"
+
+- name: Copy_newprivkey_to_traefik
+  ansible.builtin.shell:
+    cmd: cp {{ letsencrypt_path }}/privkey.pem {{ certpath }}/privkey.key
+
+- name: Copy_newcert_to_traefik
+  ansible.builtin.copy:
+    src: '{{ letsencrypt_path }}/fullchain.pem'
+    dest: '{{ certpath }}/cert.pem'
+
+- name: Change_certfiles_permissions
+  file: path={{ certpath }} owner=root group=root mode=0777 state=directory recurse=yes
+
+- name: Start_Docker_Container
+  shell:
+    cmd: docker start traefik_service

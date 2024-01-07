@@ -1,0 +1,36 @@
+# Certificate Check
+- name: Certbot_certificate Check
+  hosts: localhost
+  tags: certbot, check
+  tasks:
+    - name: Certbot Check Certstatus
+      ansible.builtin.shell:
+        cmd: certbot certificates
+      register: certstatus
+    - debug: msg="{{ certstatus.stdout_lines }}"
+
+# Renews the letsencrypt certificate
+- name: Certbot_certificate Renewal
+  hosts: localhost
+  tags: certbot, certificate
+  tasks:
+    - name: certbotrenewal
+      ansible.builtin.shell:
+        cmd: certbot certonly --dns-cloudflare --dns-cloudflare-credentials /path/to/ansible_service/clouflare.ini -d '<domain-name>'
+      ignore_errors: true
+      when: certstatus.stdout_lines is search("EXPIRED")
+      register: certrenewalstatus
+    - debug: msg="{{ certrenewalstatus }}"
+      
+# Copies the certificate files to Traefik certificate repository
+- name: Traefik_cert renewal
+  hosts: localhost
+  become: yes
+  vars:
+    certpath: "/path/to/traefik_service/certs/"
+    letsencrypt_path: "/path/to/letsencrypt_directory/domain"
+  tags: traefik, certificate
+  tasks:
+    - import_role:
+        name: certtotraefik
+      when: certstatus.stdout_lines is search("EXPIRED")
